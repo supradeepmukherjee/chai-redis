@@ -9,6 +9,8 @@ const redis = new Redis("redis://localhost:6379")
 
 const BANNER_KEY = "app:banner"
 
+const otpKey = phone => 'otp:' + phone
+
 app.get('/redis', async (req, res) => {
     const _ = await redis.ping()
     res.send(_)
@@ -37,6 +39,18 @@ app.delete('/banner', async (req, res) => {
 app.get('/banner/exists', async (req, res) => {
     const exists = await redis.exists(BANNER_KEY)
     res.json({ exists: Boolean(exists) })
+})
+
+app.post('/otp', async (req, res) => {
+    const { phone } = req.body
+    const otp = Math.floor(100000 + Math.floor() * 900000).toString()
+    await redis.set(otpKey(phone), otp, "EX", 30)
+    res.json({ success: true })
+})
+
+app.get('/otp/:phone/ttl', async (req, res) => {
+    const ttl = await redis.ttl(otpKey(req.params.phone))
+    res.json({ ttl })
 })
 
 app.listen(6969)
