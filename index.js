@@ -83,7 +83,7 @@ app.get('/emails/process-one', async (req, res) => {
 })
 
 app.post('/welcome-email', async (req, res) => {
-    const job = emailQueue.add(
+    const job = await emailQueue.add(
         'send-welcome-email',
         {
             to: req.body.to,
@@ -91,13 +91,23 @@ app.post('/welcome-email', async (req, res) => {
         },
         {
             attempts: 3,
-            backoff:{
-                type:'exponential',
-                delay:1000
+            backoff: {
+                type: 'exponential',
+                delay: 1000
             }
         }
     )
-    res.json('job')
+    res.json({ job })
+})
+
+app.post('/notifications', async (req, res) => {
+    const payload = {
+        title: req.body.title,
+        createdAt: new Date().toISOString()
+    }
+    const receivers = await redis//redis is publisher actually
+        .publish('notifications', JSON.stringify(payload))
+    res.json({ receivers })
 })
 
 app.listen(6969)
