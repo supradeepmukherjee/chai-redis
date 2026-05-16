@@ -53,4 +53,14 @@ app.get('/otp/:phone/ttl', async (req, res) => {
     res.json({ ttl })
 })
 
+app.post('/user/:id/hash', async (req, res) => {
+    const data = await redis.hset(`user/:${req.params.id}/hash`, req.body)
+    res.json({ data })
+})
+
+app.get('/user/:id/hash', async (req, res) => {
+    const user = await redis.hgetall(`user/:${req.params.id}/hash`)
+    res.json({ user })
+})
+
 app.listen(6969)
