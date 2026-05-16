@@ -8,6 +8,7 @@ app.use(express.json())
 const redis = new Redis("redis://localhost:6379")
 
 const BANNER_KEY = "app:banner"
+const QUEUE_KEY = 'queue:emails'
 
 const otpKey = phone => 'otp:' + phone
 
@@ -61,6 +62,23 @@ app.post('/user/:id/hash', async (req, res) => {
 app.get('/user/:id/hash', async (req, res) => {
     const user = await redis.hgetall(`user/:${req.params.id}/hash`)
     res.json({ user })
+})
+
+app.post('/emails', async (req, res) => {
+    const job = {
+        to: req.body.to,
+        subject: req.body.subject || 'No Subject',
+        content: req.body.content || 'No Content',
+        createdAt: new Date().toISOString()
+    }
+    await redis.lpush(QUEUE_KEY, JSON.stringify(job))
+    res.json({ job })
+})
+
+app.get('/emails/process-one', async (req, res) => {
+    const rawJob = await redis.rpop(QUEUE_KEY)
+    if (!rawJob) res.json({ msg: 'No jobs' })
+    res.json({ job: JSON.parse(rawJob) })
 })
 
 app.listen(6969)
