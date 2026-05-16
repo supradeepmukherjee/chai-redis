@@ -1,6 +1,7 @@
 import express from "express";
-import mongoose from "mongoose";
 import Redis from "ioredis";
+import mongoose from "mongoose";
+import { emailQueue } from "./queue.js";
 
 const app = express();
 app.use(express.json())
@@ -79,6 +80,24 @@ app.get('/emails/process-one', async (req, res) => {
     const rawJob = await redis.rpop(QUEUE_KEY)
     if (!rawJob) res.json({ msg: 'No jobs' })
     res.json({ job: JSON.parse(rawJob) })
+})
+
+app.post('/welcome-email', async (req, res) => {
+    const job = emailQueue.add(
+        'send-welcome-email',
+        {
+            to: req.body.to,
+            name: req.body.name || 'Manus'
+        },
+        {
+            attempts: 3,
+            backoff:{
+                type:'exponential',
+                delay:1000
+            }
+        }
+    )
+    res.json('job')
 })
 
 app.listen(6969)
